@@ -25,20 +25,19 @@ function App() {
 
       // Measure upload speed
       const formData = new FormData();
-      const blob = new Blob([new ArrayBuffer(10 * 1024 * 1024)]); // Create a 10 MB blob for more accurate testing
+      const blob = new Blob([new ArrayBuffer(50 * 1024 * 1024)]); 
       formData.append('file', blob);
+
       const uploadResponse = await axios.post('http://localhost:5000/speedtests/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
       });
       const uploadSpeed = uploadResponse.data.uploadSpeed;
 
-      // Measure ping
       const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
       const ping = pingResponse.data.ping;
 
-      // Save result
       const result = {
         downloadSpeed,
         uploadSpeed,
@@ -48,7 +47,6 @@ function App() {
 
       setTestResult(result);
 
-      // Optionally, send the result to the server
       await axios.post('http://localhost:5000/speedtests', result);
     } catch (error) {
       console.error('Error running speed test:', error);

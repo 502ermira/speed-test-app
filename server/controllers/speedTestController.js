@@ -1,10 +1,7 @@
 const SpeedTest = require('../models/SpeedTest');
 const axios = require('axios');
 const ping = require('ping');
-const multer = require('multer');
 const { performance } = require('perf_hooks');
-
-const upload = multer().single('file');
 
 exports.getSpeedTests = async (req, res) => {
   try {
@@ -35,9 +32,9 @@ exports.addSpeedTest = async (req, res) => {
 
 // Download test
 exports.downloadFile = async (req, res) => {
-  const fileUrl = 'http://ipv4.download.thinkbroadband.com/100MB.zip'; // A large file
+  const fileUrl = 'http://ipv4.download.thinkbroadband.com/100MB.zip';
 
-  const startTime = Date.now();
+  const startTime = performance.now();
 
   try {
     const response = await axios({
@@ -46,7 +43,7 @@ exports.downloadFile = async (req, res) => {
       responseType: 'stream',
     });
 
-    const fileSize = parseInt(response.headers['content-length'], 10); // size in bytes
+    const fileSize = parseInt(response.headers['content-length'], 10);
     let downloadedSize = 0;
 
     response.data.on('data', (chunk) => {
@@ -54,9 +51,9 @@ exports.downloadFile = async (req, res) => {
     });
 
     response.data.on('end', () => {
-      const endTime = Date.now();
-      const duration = (endTime - startTime) / 1000; // duration in seconds
-      const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024); // speed in Mbps
+      const endTime = performance.now();
+      const duration = (endTime - startTime) / 1000;
+      const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024);
       res.json({ downloadSpeed: speedMbps.toFixed(2) });
     });
 
@@ -71,29 +68,54 @@ exports.downloadFile = async (req, res) => {
 };
 
 // Upload speed test
-exports.uploadFile = (req, res) => {
+exports.uploadFile = async (req, res) => {
   const startTime = performance.now();
-  upload(req, res, (err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Upload failed' });
-    }
-    const endTime = performance.now();
-    const duration = (endTime - startTime) / 1000; // duration in seconds
-    const fileSize = req.file.size; // size in bytes
-    const speedMbps = (fileSize * 8) / (duration * 1024 * 1024); // speed in Mbps
-    res.json({ uploadSpeed: speedMbps.toFixed(2) });
-  });
-};
+  try {
+    const fileUrl = 'http://ipv4.download.thinkbroadband.com/100MB.zip';
+    const response = await axios.get(fileUrl, { responseType: 'stream' });
 
+    let uploadedSize = 0;
+
+    response.data.on('data', (chunk) => {
+      uploadedSize += chunk.length;
+    });
+
+    response.data.on('end', () => {
+      const endTime = performance.now();
+      const duration = (endTime - startTime) / 1000;
+      const speedMbps = (uploadedSize * 8) / (duration * 1024 * 1024);
+      res.json({ uploadSpeed: speedMbps.toFixed(2) });
+    });
+
+    response.data.on('error', (err) => {
+      console.error('Error during upload:', err);
+      res.status(500).send('Error during upload');
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).send('Error uploading file');
+  }
+};
 // Ping test
 exports.ping = async (req, res) => {
-  const host = '8.8.8.8'; // Google DNS server for reliable ping
+  const host = 'google.com';
+  const attempts = 16;
+  let totalPing = 0;
 
   try {
-    const pingResult = await ping.promise.probe(host, { timeout: 2 });
-    res.json({ ping: pingResult.time });
+    for (let i = 0; i < attempts; i++) {
+      const response = await ping.promise.probe(host);
+      if (response && response.time !== undefined) {
+        totalPing += response.time;
+      } else {
+        throw new Error('Error calculating ping');
+      }
+    }
+
+    const averagePing = totalPing / attempts;
+    res.json({ ping: averagePing.toFixed(2) });
   } catch (error) {
-    console.error('Error during ping test:', error);
-    res.status(500).send('Error during ping test');
+    console.error('Error pinging:', error);
+    res.status(500).send('Error pinging');
   }
 };
