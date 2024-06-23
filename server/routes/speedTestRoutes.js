@@ -7,5 +7,6 @@ router.post('/', speedTestController.addSpeedTest);
 router.get('/download', speedTestController.downloadFile);
 router.post('/upload', speedTestController.uploadFile);
 router.get('/ping', speedTestController.ping);
+router.get('/events', speedTestController.sse);
 
 module.exports = router;

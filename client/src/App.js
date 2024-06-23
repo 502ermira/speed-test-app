@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import ReactSpeedometer from 'react-d3-speedometer';
+import './App.css';
 
 function App() {
   const [speedTests, setSpeedTests] = useState([]);
-  const [testResult, setTestResult] = useState(null);
+  const [downloadSpeed, setDownloadSpeed] = useState(0);
+  const [uploadSpeed, setUploadSpeed] = useState(0);
+  const [ping, setPing] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
+  const [downloadComplete, setDownloadComplete] = useState(false);
 
   useEffect(() => {
     axios.get('http://localhost:5000/speedtests')
@@ -16,12 +21,49 @@ function App() {
       });
   }, []);
 
+  useEffect(() => {
+    const eventSource = new EventSource('http://localhost:5000/speedtests/events');
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.downloadSpeed !== undefined) {
+        const parsedDownloadSpeed = parseFloat(data.downloadSpeed);
+        if (!isNaN(parsedDownloadSpeed)) {
+          setDownloadSpeed(parsedDownloadSpeed);
+        }
+      }
+      if (data.done) {
+        setDownloadComplete(true);
+      }
+    };
+    eventSource.onerror = (err) => {
+      console.error('EventSource error:', err);
+      setIsTesting(false);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
   const runSpeedTest = async () => {
     setIsTesting(true);
+    setDownloadComplete(false);
+    setDownloadSpeed(0);
+    setUploadSpeed(0);
+    setPing(0);
+
     try {
+      // Measure ping
+      const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
+      setPing(pingResponse.data.ping);
+
       // Measure download speed
       const downloadResponse = await axios.get('http://localhost:5000/speedtests/download');
-      const downloadSpeed = downloadResponse.data.downloadSpeed;
+      const parsedDownloadSpeed = parseFloat(downloadResponse.data.downloadSpeed);
+      if (!isNaN(parsedDownloadSpeed)) {
+        setDownloadSpeed(parsedDownloadSpeed);
+      }
 
       // Measure upload speed
       const formData = new FormData();
@@ -33,27 +75,33 @@ function App() {
           'Content-Type': 'multipart/form-data'
         },
       });
-      const uploadSpeed = uploadResponse.data.uploadSpeed;
-
-      const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
-      const ping = pingResponse.data.ping;
+      const parsedUploadSpeed = parseFloat(uploadResponse.data.uploadSpeed);
+      if (!isNaN(parsedUploadSpeed)) {
+        setUploadSpeed(parsedUploadSpeed);
+      }
 
       const result = {
-        downloadSpeed,
-        uploadSpeed,
-        ping,
+        downloadSpeed: parsedDownloadSpeed,
+        uploadSpeed: parsedUploadSpeed,
+        ping: pingResponse.data.ping,
         date: new Date().toLocaleString()
       };
 
-      setTestResult(result);
-
       await axios.post('http://localhost:5000/speedtests', result);
+      setSpeedTests((prevTests) => [...prevTests, result]);
     } catch (error) {
       console.error('Error running speed test:', error);
     } finally {
-      setIsTesting(false);
+      if (downloadComplete && uploadSpeed > 0) {
+        setIsTesting(false);
+      }
     }
   };
+  useEffect(() => {
+    if (downloadComplete && uploadSpeed > 0) {
+      setIsTesting(false);
+    }
+  }, [downloadComplete, uploadSpeed]);
 
   return (
     <div className="App">
@@ -62,14 +110,22 @@ function App() {
         <button onClick={runSpeedTest} disabled={isTesting}>
           {isTesting ? 'Testing...' : 'Run Speed Test'}
         </button>
-        {testResult && (
-          <div>
-            <p>Download: {testResult.downloadSpeed} Mbps</p>
-            <p>Upload: {testResult.uploadSpeed} Mbps</p>
-            <p>Ping: {testResult.ping} ms</p>
-            <p>Date: {testResult.date}</p>
-          </div>
-        )}
+        <div className="speedometer-container">
+          <ReactSpeedometer
+            value={downloadSpeed}
+            minValue={0}
+            maxValue={300}
+            needleColor="red"
+            startColor="green"
+            segments={10}
+            endColor="blue"
+            currentValueText={`Download Speed: ${downloadSpeed.toFixed(2)} Mbps`}
+          />
+        </div>
+        <div>
+          <p>{`Ping: ${ping} ms`}</p>
+          <p>{`Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`}</p>
+        </div>
         {speedTests.length > 0 ? (
           <ul>
             {speedTests.map(test => (
@@ -85,5 +141,4 @@ function App() {
     </div>
   );
 }
-
 export default App;

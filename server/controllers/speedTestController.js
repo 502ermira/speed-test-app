@@ -1,7 +1,10 @@
 const SpeedTest = require('../models/SpeedTest');
 const axios = require('axios');
-const ping = require('ping');
 const { performance } = require('perf_hooks');
+const SSE = require('express-sse');
+const ping = require('ping');
+
+const sse = new SSE();
 
 exports.getSpeedTests = async (req, res) => {
   try {
@@ -34,8 +37,6 @@ exports.addSpeedTest = async (req, res) => {
 exports.downloadFile = async (req, res) => {
   const fileUrl = 'http://ipv4.download.thinkbroadband.com/100MB.zip';
 
-  const startTime = performance.now();
-
   try {
     const response = await axios({
       url: fileUrl,
@@ -45,26 +46,38 @@ exports.downloadFile = async (req, res) => {
 
     const fileSize = parseInt(response.headers['content-length'], 10);
     let downloadedSize = 0;
+    const startTime = performance.now();
 
     response.data.on('data', (chunk) => {
       downloadedSize += chunk.length;
+      const currentTime = performance.now();
+      const duration = (currentTime - startTime) / 1000;
+      const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024);
+      sse.send({ downloadSpeed: speedMbps.toFixed(2) });
     });
 
     response.data.on('end', () => {
       const endTime = performance.now();
       const duration = (endTime - startTime) / 1000;
       const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024);
-      res.json({ downloadSpeed: speedMbps.toFixed(2) });
+      sse.send({ downloadSpeed: speedMbps.toFixed(2), done: true });
+      res.status(200).end();
     });
 
     response.data.on('error', (err) => {
       console.error('Error during download:', err);
-      res.status(500).send('Error during download');
+      sse.send({ error: 'Error during download' });
+      res.status(500).end();
     });
   } catch (error) {
     console.error('Error downloading file:', error);
-    res.status(500).send('Error downloading file');
+    sse.send({ error: 'Error downloading file' });
+    res.status(500).end();
   }
+};
+
+exports.sse = (req, res) => {
+  sse.init(req, res);
 };
 
 // Upload speed test
@@ -96,6 +109,7 @@ exports.uploadFile = async (req, res) => {
     res.status(500).send('Error uploading file');
   }
 };
+
 // Ping test
 exports.ping = async (req, res) => {
   const host = 'google.com';
