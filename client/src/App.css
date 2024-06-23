@@ -1,46 +1,101 @@
-.App {
-  text-align: center;
-  font-family: 'Arial', sans-serif;
-}
-
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-}
-
-button {
-  background-color: #61dafb;
-  border: none;
-  padding: 10px 20px;
-  margin: 20px;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-button:disabled {
-  background-color: #ccc;
-}
-
-.speedometer-container {
-  margin: 40px auto;
-  width: 300px;
-}
-
-ul {
-  list-style: none;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #121212;
+  color: #fff;
+  margin: 0;
   padding: 0;
 }
 
-li {
-  background-color: #333;
-  color: #fff;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 5px;
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
 }
 
-h1 {
-  font-size: 2.5em;
+.App-header {
+  text-align: center;
+  padding: 20px;
+  border-bottom: 1px solid #333;
+  width: 100%;
+}
+
+.speed-test-button {
+  padding: 15px 30px;
+  font-size: 18px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+  margin-top: 20px;
+}
+
+.speed-test-button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.speed-test-button:hover {
+  background-color: #45a049;
+}
+
+.speedometer-container {
+  width: 300px;
+  height: 300px;
+  margin: 20px auto;
+}
+
+.speed-test-results {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.speed-test-results p {
+  margin: 10px;
+  font-size: 18px;
+}
+
+.speed-test-list {
+  list-style-type: none;
+  padding: 0;
+  text-align: left;
+  max-width: 600px;
+  margin: 20px auto;
+}
+
+.speed-test-list li {
+  border-bottom: 1px solid #333;
+  padding: 15px 0;
+  font-size: 16px;
+}
+
+.speed-test-list li:last-child {
+  border-bottom: none;
+}
+
+.speed-test-list li span {
+  font-weight: bold;
+  margin-right: 5px;
+  color: #4CAF50;
+}
+
+
+@media (max-width: 600px) {
+  .speed-test-button {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+
+  .speed-test-results p {
+    font-size: 16px;
+  }
+
+  .speed-test-list li {
+    font-size: 14px;
+  }
 }

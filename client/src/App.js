@@ -10,6 +10,7 @@ function App() {
   const [ping, setPing] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
   const [downloadComplete, setDownloadComplete] = useState(false);
+  const [testDate, setTestDate] = useState(null); // State to hold the test initiation date
 
   useEffect(() => {
     axios.get('http://localhost:5000/speedtests')
@@ -17,7 +18,7 @@ function App() {
         setSpeedTests(response.data);
       })
       .catch(error => {
-        console.error('There was an error fetching the data!', error);
+        console.error('Error fetching speed tests:', error);
       });
   }, []);
 
@@ -53,6 +54,16 @@ function App() {
     setUploadSpeed(0);
     setPing(0);
 
+    const testStartDate = new Date().toLocaleString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    });
+    setTestDate(testStartDate);
+
     try {
       // Measure ping
       const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
@@ -67,7 +78,7 @@ function App() {
 
       // Measure upload speed
       const formData = new FormData();
-      const blob = new Blob([new ArrayBuffer(50 * 1024 * 1024)]); 
+      const blob = new Blob([new ArrayBuffer(50 * 1024 * 1024)]);
       formData.append('file', blob);
 
       const uploadResponse = await axios.post('http://localhost:5000/speedtests/upload', formData, {
@@ -84,7 +95,7 @@ function App() {
         downloadSpeed: parsedDownloadSpeed,
         uploadSpeed: parsedUploadSpeed,
         ping: pingResponse.data.ping,
-        date: new Date().toLocaleString()
+        date: testStartDate 
       };
 
       await axios.post('http://localhost:5000/speedtests', result);
@@ -97,6 +108,7 @@ function App() {
       }
     }
   };
+
   useEffect(() => {
     if (downloadComplete && uploadSpeed > 0) {
       setIsTesting(false);
@@ -107,30 +119,34 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>Internet Speed Tests</h1>
-        <button onClick={runSpeedTest} disabled={isTesting}>
+        <button className="speed-test-button" onClick={runSpeedTest} disabled={isTesting}>
           {isTesting ? 'Testing...' : 'Run Speed Test'}
         </button>
         <div className="speedometer-container">
           <ReactSpeedometer
             value={downloadSpeed}
             minValue={0}
-            maxValue={300}
-            needleColor="red"
-            startColor="green"
+            maxValue={100}
+            needleColor="#666"
+            startColor='#6e4c3e'
             segments={10}
-            endColor="blue"
+            endColor='#9a7c67'
             currentValueText={`Download Speed: ${downloadSpeed.toFixed(2)} Mbps`}
+            ringWidth={30}
+            needleTransitionDuration={200}
+            needleHeightRatio={0.7} 
           />
         </div>
-        <div>
+        <div className="speed-test-results">
+          {testDate && <p>{`Test initiated at: ${testDate}`}</p>}
           <p>{`Ping: ${ping} ms`}</p>
           <p>{`Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`}</p>
         </div>
         {speedTests.length > 0 ? (
-          <ul>
+          <ul className="speed-test-list">
             {speedTests.map(test => (
               <li key={test._id}>
-                Download: {test.downloadSpeed} Mbps, Upload: {test.uploadSpeed} Mbps, Ping: {test.ping} ms, Date: {new Date(test.date).toLocaleString()}
+                <span>Download:</span> {test.downloadSpeed} Mbps, <span>Upload:</span> {test.uploadSpeed} Mbps, <span>Ping:</span> {test.ping} ms, <span>Date:</span> {new Date(test.date).toLocaleString()}
               </li>
             ))}
           </ul>
@@ -141,4 +157,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
