@@ -83,6 +83,7 @@ exports.sse = (req, res) => {
 // Upload speed test
 exports.uploadFile = async (req, res) => {
   const startTime = performance.now();
+
   try {
     const fileUrl = 'http://ipv4.download.thinkbroadband.com/100MB.zip';
     const response = await axios.get(fileUrl, { responseType: 'stream' });
@@ -91,21 +92,28 @@ exports.uploadFile = async (req, res) => {
 
     response.data.on('data', (chunk) => {
       uploadedSize += chunk.length;
+      const currentTime = performance.now();
+      const duration = (currentTime - startTime) / 1000;
+      const speedMbps = (uploadedSize * 8) / (duration * 1024 * 1024);
+      sse.send({ uploadSpeed: speedMbps.toFixed(2) });
     });
 
     response.data.on('end', () => {
       const endTime = performance.now();
       const duration = (endTime - startTime) / 1000;
       const speedMbps = (uploadedSize * 8) / (duration * 1024 * 1024);
-      res.json({ uploadSpeed: speedMbps.toFixed(2) });
+      sse.send({ uploadSpeed: speedMbps.toFixed(2), done: true });
+      res.status(200).json({ uploadSpeed: speedMbps.toFixed(2) });
     });
 
     response.data.on('error', (err) => {
       console.error('Error during upload:', err);
+      sse.send({ error: 'Error during upload' });
       res.status(500).send('Error during upload');
     });
   } catch (error) {
     console.error('Error uploading file:', error);
+    sse.send({ error: 'Error uploading file' });
     res.status(500).send('Error uploading file');
   }
 };

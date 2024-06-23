@@ -10,7 +10,8 @@ function App() {
   const [ping, setPing] = useState(0);
   const [isTesting, setIsTesting] = useState(false);
   const [downloadComplete, setDownloadComplete] = useState(false);
-  const [testDate, setTestDate] = useState(null); // State to hold the test initiation date
+  const [uploadComplete, setUploadComplete] = useState(false);
+  const [testDate, setTestDate] = useState(null);
 
   useEffect(() => {
     axios.get('http://localhost:5000/speedtests')
@@ -32,8 +33,19 @@ function App() {
           setDownloadSpeed(parsedDownloadSpeed);
         }
       }
+      if (data.uploadSpeed !== undefined) {
+        const parsedUploadSpeed = parseFloat(data.uploadSpeed);
+        if (!isNaN(parsedUploadSpeed)) {
+          setUploadSpeed(parsedUploadSpeed);
+        }
+      }
       if (data.done) {
-        setDownloadComplete(true);
+        if (data.downloadSpeed !== undefined) {
+          setDownloadComplete(true);
+        }
+        if (data.uploadSpeed !== undefined) {
+          setUploadComplete(true);
+        }
       }
     };
     eventSource.onerror = (err) => {
@@ -50,6 +62,7 @@ function App() {
   const runSpeedTest = async () => {
     setIsTesting(true);
     setDownloadComplete(false);
+    setUploadComplete(false);
     setDownloadSpeed(0);
     setUploadSpeed(0);
     setPing(0);
@@ -70,30 +83,22 @@ function App() {
       setPing(pingResponse.data.ping);
 
       // Measure download speed
-      const downloadResponse = await axios.get('http://localhost:5000/speedtests/download');
-      const parsedDownloadSpeed = parseFloat(downloadResponse.data.downloadSpeed);
-      if (!isNaN(parsedDownloadSpeed)) {
-        setDownloadSpeed(parsedDownloadSpeed);
-      }
+      await axios.get('http://localhost:5000/speedtests/download');
 
       // Measure upload speed
       const formData = new FormData();
       const blob = new Blob([new ArrayBuffer(50 * 1024 * 1024)]);
       formData.append('file', blob);
 
-      const uploadResponse = await axios.post('http://localhost:5000/speedtests/upload', formData, {
+      await axios.post('http://localhost:5000/speedtests/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
       });
-      const parsedUploadSpeed = parseFloat(uploadResponse.data.uploadSpeed);
-      if (!isNaN(parsedUploadSpeed)) {
-        setUploadSpeed(parsedUploadSpeed);
-      }
 
       const result = {
-        downloadSpeed: parsedDownloadSpeed,
-        uploadSpeed: parsedUploadSpeed,
+        downloadSpeed,
+        uploadSpeed,
         ping: pingResponse.data.ping,
         date: testStartDate 
       };
@@ -103,17 +108,17 @@ function App() {
     } catch (error) {
       console.error('Error running speed test:', error);
     } finally {
-      if (downloadComplete && uploadSpeed > 0) {
+      if (downloadComplete && uploadComplete) {
         setIsTesting(false);
       }
     }
   };
 
   useEffect(() => {
-    if (downloadComplete && uploadSpeed > 0) {
+    if (downloadComplete && uploadComplete) {
       setIsTesting(false);
     }
-  }, [downloadComplete, uploadSpeed]);
+  }, [downloadComplete, uploadComplete]);
 
   return (
     <div className="App">
@@ -137,10 +142,24 @@ function App() {
             needleHeightRatio={0.7} 
           />
         </div>
+        <div className="speedometer-container">
+          <ReactSpeedometer
+            value={uploadSpeed}
+            minValue={0}
+            maxValue={100}
+            needleColor="#666"
+            startColor='#3e6e4c'
+            segments={10}
+            endColor='#679a7c'
+            currentValueText={`Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`}
+            ringWidth={30}
+            needleTransitionDuration={200}
+            needleHeightRatio={0.7} 
+          />
+        </div>
         <div className="speed-test-results">
           {testDate && <p>{`Test initiated at: ${testDate}`}</p>}
           <p>{`Ping: ${ping} ms`}</p>
-          <p>{`Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`}</p>
         </div>
         {speedTests.length > 0 ? (
           <ul className="speed-test-list">
