@@ -13,6 +13,7 @@ function App() {
   const [testDate, setTestDate] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [downloadResult, setDownloadResult] = useState(0);
+  const [maxValue, setMaxValue] = useState(null);
 
   useEffect(() => {
     const eventSource = new EventSource('http://localhost:5000/speedtests/events');
@@ -81,6 +82,7 @@ function App() {
     setUploadSpeed(0);
     setPing(0);
     setDownloadResult(0);
+    setMaxValue(null);
 
     const testStartDate = new Date().toLocaleString('en-US', {
       month: 'long',
@@ -93,6 +95,15 @@ function App() {
     setTestDate(testStartDate);
 
     try {
+      // Quick estimate for download speed
+      console.log('Fetching quick estimate...');
+      const estimateResponse = await axios.get('http://localhost:5000/speedtests/quick-estimate');
+      const estimatedSpeed = parseFloat(estimateResponse.data.estimatedSpeed);
+      console.log('Estimated speed:', estimatedSpeed);
+      const newMaxValue = Math.ceil(estimatedSpeed / 50) * 50;
+      console.log('Setting max value to:', newMaxValue);
+      setMaxValue(newMaxValue);
+
       // Measure ping
       const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
       setPing(pingResponse.data.ping);
@@ -122,24 +133,27 @@ function App() {
         >
           GO
         </button>
-        <div className="speedometer-container" style={{ display: isTesting && !isTransitioning ? 'block' : 'none' }}>
-          <ReactSpeedometer
-            value={downloadComplete ? uploadSpeed : downloadSpeed}
-            minValue={0}
-            maxValue={100}
-            needleColor="#666"
-            startColor={downloadComplete ? '#3e6e4c' : '#6e4c3e'}
-            segments={10}
-            endColor={downloadComplete ? '#679a7c' : '#9a7c67'}
-            currentValueText={
-              downloadComplete
-                ? `Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`
-                : `Download Speed: ${downloadSpeed.toFixed(2)} Mbps`
-            }
-            ringWidth={30}
-            needleTransitionDuration={200}
-            needleHeightRatio={0.7}
-          />
+        <div className="speedometer-container" style={{ display: isTesting && !isTransitioning && maxValue !== null ? 'block' : 'none' }}>
+          {maxValue !== null && (
+            <ReactSpeedometer
+              key={`speedometer-${maxValue}`} 
+              value={downloadComplete ? uploadSpeed : downloadSpeed}
+              minValue={0}
+              maxValue={maxValue}
+              needleColor="#666"
+              startColor={downloadComplete ? '#3e6e4c' : '#6e4c3e'}
+              segments={10}
+              endColor={downloadComplete ? '#679a7c' : '#9a7c67'}
+              currentValueText={
+                downloadComplete
+                  ? `Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`
+                  : `Download Speed: ${downloadSpeed.toFixed(2)} Mbps`
+              }
+              ringWidth={30}
+              needleTransitionDuration={200}
+              needleHeightRatio={0.7}
+            />
+          )}
         </div>
         <div className="transition-message" style={{ display: isTransitioning ? 'block' : 'none' }}>
           <p>Please wait...</p>

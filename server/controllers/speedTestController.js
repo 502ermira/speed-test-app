@@ -80,6 +80,42 @@ exports.sse = (req, res) => {
   sse.init(req, res);
 };
 
+exports.quickEstimate = async (req, res) => {
+  const fileUrl = 'http://ipv4.download.thinkbroadband.com/10MB.zip';
+
+  try {
+    const response = await axios({
+      url: fileUrl,
+      method: 'GET',
+      responseType: 'stream',
+    });
+
+    const fileSize = parseInt(response.headers['content-length'], 10);
+    let downloadedSize = 0;
+    const startTime = performance.now();
+
+    response.data.on('data', (chunk) => {
+      downloadedSize += chunk.length;
+      const currentTime = performance.now();
+      const duration = (currentTime - startTime) / 1000;
+      const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024);
+      if (duration >= 1) {
+        response.data.destroy(); 
+        res.json({ estimatedSpeed: speedMbps.toFixed(2) });
+      }
+    });
+
+    response.data.on('error', (err) => {
+      console.error('Error during quick estimate:', err);
+      res.status(500).json({ message: 'Error during quick estimate' });
+    });
+  } catch (error) {
+    console.error('Error downloading file for quick estimate:', error);
+    res.status(500).json({ message: 'Error downloading file for quick estimate' });
+  }
+};
+
+
 // Upload speed test
 exports.uploadFile = async (req, res) => {
   const startTime = performance.now();

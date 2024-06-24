@@ -8,5 +8,6 @@ router.get('/download', speedTestController.downloadFile);
 router.post('/upload', speedTestController.uploadFile);
 router.get('/ping', speedTestController.ping);
 router.get('/events', speedTestController.sse);
+router.get('/quick-estimate', speedTestController.quickEstimate);
 
 module.exports = router;
