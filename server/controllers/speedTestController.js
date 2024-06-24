@@ -80,41 +80,36 @@ exports.sse = (req, res) => {
   sse.init(req, res);
 };
 
+ // Quick estimate for download speed
 exports.quickEstimate = async (req, res) => {
-  const fileUrl = 'http://ipv4.download.thinkbroadband.com/10MB.zip';
+  const fileUrl = 'http://ipv4.download.thinkbroadband.com/2MB.zip'; 
+  const iterations = 3;
+  let totalSpeed = 0;
 
-  try {
-    const response = await axios({
-      url: fileUrl,
-      method: 'GET',
-      responseType: 'stream',
-    });
+  for (let i = 0; i < iterations; i++) {
+    try {
+      const startTime = performance.now();
 
-    const fileSize = parseInt(response.headers['content-length'], 10);
-    let downloadedSize = 0;
-    const startTime = performance.now();
+      await axios.get(fileUrl, {
+        responseType: 'stream',
+      });
 
-    response.data.on('data', (chunk) => {
-      downloadedSize += chunk.length;
-      const currentTime = performance.now();
-      const duration = (currentTime - startTime) / 1000;
-      const speedMbps = (downloadedSize * 8) / (duration * 1024 * 1024);
-      if (duration >= 1) {
-        response.data.destroy(); 
-        res.json({ estimatedSpeed: speedMbps.toFixed(2) });
-      }
-    });
+      const endTime = performance.now();
+      const duration = (endTime - startTime) / 1000; 
+      const fileSizeMb = 1; 
 
-    response.data.on('error', (err) => {
-      console.error('Error during quick estimate:', err);
-      res.status(500).json({ message: 'Error during quick estimate' });
-    });
-  } catch (error) {
-    console.error('Error downloading file for quick estimate:', error);
-    res.status(500).json({ message: 'Error downloading file for quick estimate' });
+      const speedMbps = (fileSizeMb * 8) / duration;
+      totalSpeed += speedMbps;
+    } catch (error) {
+      console.error('Error during quick estimate:', error);
+      res.status(500).json({ error: 'Error during quick estimate' });
+      return;
+    }
   }
-};
 
+  const averageSpeed = totalSpeed / iterations;
+  res.json({ estimatedSpeed: averageSpeed.toFixed(2) });
+};
 
 // Upload speed test
 exports.uploadFile = async (req, res) => {
