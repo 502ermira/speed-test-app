@@ -126,7 +126,7 @@ function App() {
       <header className="App-header">
         <h1>Internet Speed Tests</h1>
         <button
-          className="speed-test-button circular-button"
+          className="speed-test-button"
           onClick={runSpeedTest}
           disabled={isTesting}
           style={{ display: isTesting ? 'none' : 'block' }}

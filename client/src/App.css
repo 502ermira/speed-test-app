@@ -1,133 +1,118 @@
-* {
-  margin:0;
-  padding: 0;
-  box-sizing: border-box;
-  width: 100%;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 500;
-}
 body {
-  background-color: #f4f4f9;
-  color: #333;
-  font-size: 16px;
-  line-height: 1.6;
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background-color: #121212;
+  color: #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-/* App Container */
 .App {
   text-align: center;
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
 }
 
 .App-header {
-  background-color: #fff;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #282c34;
+  color: white;
+  height:70vh;
+  width: 65vh; 
 }
 
 .App-header h1 {
-  font-size: 2.5em;
-  margin-bottom: 20px;
-  color: #333;
+  font-size: 2em;
+  position: absolute;
+  top:15%;
 }
 
 .speed-test-button {
-  background-color: #007bff;
-  color: #fff;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
   border: none;
-  padding: 15px 30px;
-  border-radius: 50px;
-  font-size: 1.2em;
+  width: 130px;
+  height: 130px;
+  font-size: 1.6em;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.speed-test-button:hover {
-  background-color: #0056b3;
-}
-
-.circular-button {
-  width: 80px;
-  height: 80px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.speedometer-container {
-  margin: 40px 0;
-}
-
-.transition-message {
-  margin: 20px 0;
-  font-size: 1.2em;
-  color: #ff9900;
-}
-
-.speed-test-results {
-  background-color: #f8f9fa;
-  padding: 20px;
-  border-radius: 10px;
-  margin: 20px 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.speed-test-results p {
-  margin: 10px 0;
-  font-size: 1.1em;
+  position: absolute;
+  animation: heartbeat 1.5s infinite;
+  outline: none;
+  transition: background-color 0.3s;
+  margin: 0 auto; 
+  top: 36%;
+  
 }
 
 .speed-test-button:disabled {
-  background-color: #cccccc;
+  background-color: #555;
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .App-header {
-    padding: 15px;
-  }
+.speed-test-button:hover:not(:disabled) {
+  background-color: #575757;
+}
 
-  .App-header h1 {
-    font-size: 2em;
-  }
+.speed-test-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: rgba(58, 58, 58, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: pulse 1.5s infinite;
+}
 
-  .speed-test-button {
-    padding: 10px 20px;
-    font-size: 1em;
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
   }
-
-  .speed-test-results {
-    padding: 15px;
+  70% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
   }
-
-  .speed-test-results p {
-    font-size: 1em;
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
   }
 }
 
-
-@media (max-width: 600px) {
-  .speed-test-button {
-    padding: 12px 24px;
-    font-size: 16px;
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
   }
-
-  .speed-test-results p {
-    font-size: 16px;
-  }
-
-  .speed-test-list li {
-    font-size: 14px;
+  50% {
+    transform: scale(1.1);
   }
 }
 
+.speedometer-container {
+  margin: 0px 0;
+  position: absolute;
+  top: 30%;
+}
+
+.transition-message {
+  color: #679a7c;
+  font-size: 1.2em;
+}
+
+.speed-test-results {
+  top: 67%;
+  position: absolute;
+}
+
+.speed-test-results p {
+  margin: 5px 0;
+}
