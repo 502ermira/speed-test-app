@@ -24,7 +24,7 @@ function App() {
   const uploadSpeedRef = useRef(null);
 
   useEffect(() => {
-    const eventSource = new EventSource('http://localhost:5000/speedtests/events');
+    const eventSource = new EventSource(`${process.env.REACT_APP_API_BASE_URL}/events`);
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.downloadSpeed !== undefined) {
@@ -72,7 +72,7 @@ function App() {
     formData.append('file', blob);
 
     try {
-      await axios.post('http://localhost:5000/speedtests/upload', formData, {
+      await axios.post(`${process.env.REACT_APP_API_BASE_URL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
@@ -93,7 +93,7 @@ function App() {
     setDownloadResult(0);
     setMaxValue(null);
     setTestRun(true); 
-  
+
     const testStartDate = new Date().toLocaleString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -103,25 +103,25 @@ function App() {
       hour12: true
     });
     setTestDate(testStartDate);
-  
+
     try {
       // Quick estimate for download speed
       console.log('Fetching quick estimate...');
-      const estimateResponse = await axios.get('http://localhost:5000/speedtests/quick-estimate');
+      const estimateResponse = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/quick-estimate`);
       const estimatedSpeed = parseFloat(estimateResponse.data.estimatedSpeed);
       console.log('Estimated speed:', estimatedSpeed);
       const newMaxValue = Math.ceil(estimatedSpeed / 50) * 50;
       console.log('Setting max value to:', newMaxValue);
       setMaxValue(newMaxValue);
-  
+
       // Measure ping
-      const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
+      const pingResponse = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/ping`);
       setPing(pingResponse.data.ping);
-  
+
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Measure download speed
-      await axios.get('http://localhost:5000/speedtests/download');
+      await axios.get(`${process.env.REACT_APP_API_BASE_URL}/download`);
     } catch (error) {
       console.error('Error running speed test:', error);
     }
@@ -211,6 +211,5 @@ function App() {
     </div>
   );
 }
-
 
 export default App;

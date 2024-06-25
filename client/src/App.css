@@ -126,3 +126,54 @@ body {
 .speed-test-results .label {
   color: #52734D;
 }
+
+
+@media (max-width: 575.98px) {
+  .App-header {
+    height: 88vh;
+    width: 70vw;
+    box-shadow: none;
+  }
+
+  .App-header h1 {
+    font-size: 1.8em;
+  }
+
+  .speed-test-button {
+    width: 155px;
+    height: 155px;
+    font-size: 1.55em;
+    top: 28%;
+  }
+
+  .speedometer-container {
+    top: 26%;
+  }
+
+  .transition-message {
+    font-size: 1.3em;
+    top: 35%;
+  }
+
+  .speed-test-results {
+    top: 58%;
+    
+  }
+  .speed-test-results p {
+    font-size: 1em;
+    margin:13px;
+  }
+
+  .welcome-message {
+    font-size: 1.05em;
+    top: 64%;
+  }
+}
+
+
+
+
+
+
+
+
