@@ -83,7 +83,7 @@ exports.sse = (req, res) => {
  // Quick estimate for download speed
 exports.quickEstimate = async (req, res) => {
   const fileUrl = 'http://ipv4.download.thinkbroadband.com/2MB.zip'; 
-  const iterations = 3;
+  const iterations = 5;
   let totalSpeed = 0;
 
   for (let i = 0; i < iterations; i++) {

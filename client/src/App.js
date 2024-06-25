@@ -6,7 +6,7 @@ import './App.css';
 function App() {
   const [downloadSpeed, setDownloadSpeed] = useState(0);
   const [uploadSpeed, setUploadSpeed] = useState(0);
-  const [ping, setPing] = useState(0);
+  const [ping, setPing] = useState(null);
   const [isTesting, setIsTesting] = useState(false);
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
@@ -14,6 +14,8 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [downloadResult, setDownloadResult] = useState(0);
   const [maxValue, setMaxValue] = useState(null);
+  const [testRun, setTestRun] = useState(false);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true); 
 
   useEffect(() => {
     const eventSource = new EventSource('http://localhost:5000/speedtests/events');
@@ -34,7 +36,7 @@ function App() {
       if (data.done) {
         if (data.downloadSpeed !== undefined) {
           setDownloadComplete(true);
-          setDownloadResult(data.downloadSpeed); 
+          setDownloadResult(data.downloadSpeed);
           setIsTransitioning(true);
           setTimeout(() => {
             setIsTransitioning(false);
@@ -76,13 +78,15 @@ function App() {
 
   const runSpeedTest = async () => {
     setIsTesting(true);
+    setShowWelcomeMessage(false); 
     setDownloadComplete(false);
     setUploadComplete(false);
     setDownloadSpeed(0);
     setUploadSpeed(0);
-    setPing(0);
+    setPing(null); 
     setDownloadResult(0);
     setMaxValue(null);
+    setTestRun(true); 
 
     const testStartDate = new Date().toLocaleString('en-US', {
       month: 'long',
@@ -124,7 +128,13 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Internet Speed Tests</h1>
+        <h1>Internet Speed Test</h1>
+        {showWelcomeMessage && !isTesting && (
+          <div className="welcome-message">
+            <p>Welcome to the Internet Speed Test!</p>
+            <p>Click the "GO" button to start the test.</p>
+          </div>
+        )}
         <button
           className="speed-test-button"
           onClick={runSpeedTest}
@@ -136,22 +146,22 @@ function App() {
         <div className="speedometer-container" style={{ display: isTesting && !isTransitioning && maxValue !== null ? 'block' : 'none' }}>
           {maxValue !== null && (
             <ReactSpeedometer
-              key={`speedometer-${maxValue}`} 
+              key={`speedometer-${maxValue}`}
               value={downloadComplete ? uploadSpeed : downloadSpeed}
               minValue={0}
               maxValue={maxValue}
-              needleColor="#666"
-              startColor={downloadComplete ? '#3e6e4c' : '#6e4c3e'}
+              needleColor="#EDEDED"
+              startColor={downloadComplete ? '#A3B18A' : '#52734D'}
               segments={10}
-              endColor={downloadComplete ? '#679a7c' : '#9a7c67'}
+              endColor={downloadComplete ? '#4CAF50' : '#1A2E1A'}
               currentValueText={
                 downloadComplete
                   ? `Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`
                   : `Download Speed: ${downloadSpeed.toFixed(2)} Mbps`
               }
-              ringWidth={30}
+              ringWidth={35}
               needleTransitionDuration={200}
-              needleHeightRatio={0.7}
+              needleHeightRatio={0.75}
             />
           )}
         </div>
@@ -159,10 +169,10 @@ function App() {
           <p>Please wait...</p>
         </div>
         <div className="speed-test-results">
-          {testDate && <p>{`Test initiated at: ${testDate}`}</p>}
-          <p>{`Ping: ${ping} ms`}</p>
-          {downloadComplete && <p>{`Download Speed: ${downloadResult} Mbps`}</p>}
-          {uploadComplete && <p>{`Upload Speed: ${uploadSpeed.toFixed(2)} Mbps`}</p>}
+          {testDate && <p><span className="label">Test initiated at: </span>{testDate}</p>}
+          {(isTesting || testRun) && ping !== null && <p><span className="label">Ping: </span>{ping} ms</p>}
+          {downloadComplete && <p><span className="label">Download Speed: </span>{downloadResult} Mbps</p>}
+          {uploadComplete && <p><span className="label">Upload Speed: </span>{uploadSpeed.toFixed(2)} Mbps</p>}
         </div>
       </header>
     </div>
