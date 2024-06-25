@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import ReactSpeedometer from 'react-d3-speedometer';
 import './App.css';
+import { gsap } from 'gsap';
 
 function App() {
   const [downloadSpeed, setDownloadSpeed] = useState(0);
@@ -16,6 +17,11 @@ function App() {
   const [maxValue, setMaxValue] = useState(null);
   const [testRun, setTestRun] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true); 
+
+  const testDateRef = useRef(null);
+  const pingRef = useRef(null);
+  const downloadSpeedRef = useRef(null);
+  const uploadSpeedRef = useRef(null);
 
   useEffect(() => {
     const eventSource = new EventSource('http://localhost:5000/speedtests/events');
@@ -87,7 +93,7 @@ function App() {
     setDownloadResult(0);
     setMaxValue(null);
     setTestRun(true); 
-
+  
     const testStartDate = new Date().toLocaleString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -97,7 +103,7 @@ function App() {
       hour12: true
     });
     setTestDate(testStartDate);
-
+  
     try {
       // Quick estimate for download speed
       console.log('Fetching quick estimate...');
@@ -107,10 +113,12 @@ function App() {
       const newMaxValue = Math.ceil(estimatedSpeed / 50) * 50;
       console.log('Setting max value to:', newMaxValue);
       setMaxValue(newMaxValue);
-
+  
       // Measure ping
       const pingResponse = await axios.get('http://localhost:5000/speedtests/ping');
       setPing(pingResponse.data.ping);
+  
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Measure download speed
       await axios.get('http://localhost:5000/speedtests/download');
@@ -124,6 +132,31 @@ function App() {
       setIsTesting(false);
     }
   }, [downloadComplete, uploadComplete]);
+
+  useEffect(() => {
+    if (testDate) {
+      gsap.fromTo(testDateRef.current, { opacity: 0 }, { opacity: 1, duration: 0.8 });
+    }
+  }, [testDate]);
+
+  useEffect(() => {
+    if (ping !== null) {
+      gsap.fromTo(pingRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9 });
+    }
+  }, [ping]);
+
+  useEffect(() => {
+    if (downloadComplete) {
+      gsap.fromTo(downloadSpeedRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9});
+    }
+  }, [downloadComplete]);
+
+  useEffect(() => {
+    if (uploadComplete) {
+      gsap.fromTo(uploadSpeedRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9 });
+    }
+  }, [uploadComplete]);
+
 
   return (
     <div className="App">
@@ -169,14 +202,15 @@ function App() {
           <p>Please wait...</p>
         </div>
         <div className="speed-test-results">
-          {testDate && <p><span className="label">Test initiated at: </span>{testDate}</p>}
-          {(isTesting || testRun) && ping !== null && <p><span className="label">Ping: </span>{ping} ms</p>}
-          {downloadComplete && <p><span className="label">Download Speed: </span>{downloadResult} Mbps</p>}
-          {uploadComplete && <p><span className="label">Upload Speed: </span>{uploadSpeed.toFixed(2)} Mbps</p>}
+          {testDate && <p ref={testDateRef}><span className="label">Test initiated at: </span>{testDate}</p>}
+          {(isTesting || testRun) && ping !== null && <p ref={pingRef}><span className="label">Ping: </span>{ping} ms</p>}
+          {downloadComplete && <p ref={downloadSpeedRef}><span className="label">Download Speed: </span>{downloadResult} Mbps</p>}
+          {uploadComplete && <p ref={uploadSpeedRef}><span className="label">Upload Speed: </span>{uploadSpeed.toFixed(2)} Mbps</p>}
         </div>
       </header>
     </div>
   );
 }
+
 
 export default App;
