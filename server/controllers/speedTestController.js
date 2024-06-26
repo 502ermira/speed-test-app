@@ -3,6 +3,8 @@ const axios = require('axios');
 const { performance } = require('perf_hooks');
 const SSE = require('express-sse');
 const ping = require('ping');
+const tcpp = require('tcp-ping');
+
 
 const sse = new SSE();
 
@@ -151,24 +153,33 @@ exports.uploadFile = async (req, res) => {
 
 // Ping test
 exports.ping = async (req, res) => {
-  const host = 'google.com';
-  const attempts = 16;
-  let totalPing = 0;
+  const host = 'www.google.com'; 
+  const iterations = 20; 
+  const timeout = 200; 
+  const maxPingThreshold = 100; 
 
   try {
-    for (let i = 0; i < attempts; i++) {
-      const response = await ping.promise.probe(host);
-      if (response && response.time !== undefined) {
-        totalPing += response.time;
-      } else {
-        throw new Error('Error calculating ping');
+    let validTimes = [];
+
+    for (let i = 0; i < iterations; i++) {
+      const result = await ping.promise.probe(host, { timeout });
+
+      if (result.alive && result.time !== undefined && result.time <= maxPingThreshold) {
+        validTimes.push(result.time);
       }
     }
 
-    const averagePing = totalPing / attempts;
-    res.json({ ping: averagePing.toFixed(2) });
+    if (validTimes.length > 0) {
+      validTimes.sort((a, b) => a - b);
+      const medianIndex = Math.floor(validTimes.length / 2);
+      const medianPing = validTimes[medianIndex];
+
+      res.json({ ping: medianPing.toFixed(2) });
+    } else {
+      res.status(500).json({ error: 'No valid ping responses' });
+    }
   } catch (error) {
-    console.error('Error pinging:', error);
-    res.status(500).send('Error pinging');
+    console.error('Error during ping test:', error);
+    res.status(500).json({ error: 'Error during ping test' });
   }
 };
