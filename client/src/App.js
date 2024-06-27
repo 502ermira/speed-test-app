@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import ReactSpeedometer from 'react-d3-speedometer';
-import './App.css';
 import { gsap } from 'gsap';
+import './App.css';
+import { MdNetworkPing, MdOutlineDownload, MdOutlineUpload } from "react-icons/md";
 
 function App() {
   const [downloadSpeed, setDownloadSpeed] = useState(0);
@@ -16,7 +17,7 @@ function App() {
   const [downloadResult, setDownloadResult] = useState(0);
   const [maxValue, setMaxValue] = useState(null);
   const [testRun, setTestRun] = useState(false);
-  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true); 
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
 
   const testDateRef = useRef(null);
   const pingRef = useRef(null);
@@ -25,36 +26,43 @@ function App() {
 
   useEffect(() => {
     const eventSource = new EventSource(`${process.env.REACT_APP_API_BASE_URL}/events`);
+
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
+
       if (data.downloadSpeed !== undefined) {
         const parsedDownloadSpeed = parseFloat(data.downloadSpeed);
         if (!isNaN(parsedDownloadSpeed)) {
           setDownloadSpeed(parsedDownloadSpeed);
         }
       }
+
       if (data.uploadSpeed !== undefined) {
         const parsedUploadSpeed = parseFloat(data.uploadSpeed);
         if (!isNaN(parsedUploadSpeed)) {
           setUploadSpeed(parsedUploadSpeed);
         }
       }
+
       if (data.done) {
         if (data.downloadSpeed !== undefined) {
           setDownloadComplete(true);
           setDownloadResult(data.downloadSpeed);
           setIsTransitioning(true);
+
           setTimeout(() => {
             setIsTransitioning(false);
             setDownloadSpeed(0);
             setTimeout(startUploadSpeedTest, 1000);
           }, 2000);
         }
+
         if (data.uploadSpeed !== undefined) {
           setUploadComplete(true);
         }
       }
     };
+
     eventSource.onerror = (err) => {
       console.error('EventSource error:', err);
       setIsTesting(false);
@@ -84,15 +92,15 @@ function App() {
 
   const runSpeedTest = async () => {
     setIsTesting(true);
-    setShowWelcomeMessage(false); 
+    setShowWelcomeMessage(false);
     setDownloadComplete(false);
     setUploadComplete(false);
     setDownloadSpeed(0);
     setUploadSpeed(0);
-    setPing(null); 
+    setPing(null);
     setDownloadResult(0);
     setMaxValue(null);
-    setTestRun(true); 
+    setTestRun(true);
 
     const testStartDate = new Date().toLocaleString('en-US', {
       month: 'long',
@@ -147,7 +155,7 @@ function App() {
 
   useEffect(() => {
     if (downloadComplete) {
-      gsap.fromTo(downloadSpeedRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9});
+      gsap.fromTo(downloadSpeedRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9 });
     }
   }, [downloadComplete]);
 
@@ -156,7 +164,6 @@ function App() {
       gsap.fromTo(uploadSpeedRef.current, { opacity: 0 }, { opacity: 1, duration: 0.9 });
     }
   }, [uploadComplete]);
-
 
   return (
     <div className="App">
@@ -203,9 +210,9 @@ function App() {
         </div>
         <div className="speed-test-results">
           {testDate && <p ref={testDateRef}><span className="label">Test initiated at: </span>{testDate}</p>}
-          {(isTesting || testRun) && ping !== null && <p ref={pingRef}><span className="label">Ping: </span>{ping} ms</p>}
-          {downloadComplete && <p ref={downloadSpeedRef}><span className="label">Download Speed: </span>{downloadResult} Mbps</p>}
-          {uploadComplete && <p ref={uploadSpeedRef}><span className="label">Upload Speed: </span>{uploadSpeed.toFixed(2)} Mbps</p>}
+          {(isTesting || testRun) && ping !== null && <p ref={pingRef}><span className="label"><MdNetworkPing />Ping: </span>{ping} ms</p>}
+          {downloadComplete && <p ref={downloadSpeedRef}><span className="label"><MdOutlineDownload />Download: </span>{downloadResult} Mbps</p>}
+          {uploadComplete && <p ref={uploadSpeedRef}><span className="label"><MdOutlineUpload />Upload: </span>{uploadSpeed.toFixed(2)} Mbps</p>}
         </div>
       </header>
     </div>

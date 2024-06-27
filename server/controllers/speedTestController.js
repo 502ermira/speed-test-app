@@ -3,7 +3,7 @@ const axios = require('axios');
 const { performance } = require('perf_hooks');
 const SSE = require('express-sse');
 const ping = require('ping');
-const tcpp = require('tcp-ping');
+const dns = require('dns').promises;
 
 
 const sse = new SSE();
@@ -153,26 +153,71 @@ exports.uploadFile = async (req, res) => {
 
 // Ping test
 exports.ping = async (req, res) => {
-  const host = 'www.google.com'; 
-  const iterations = 20; 
-  const timeout = 200; 
-  const maxPingThreshold = 100; 
+  const host = 'www.google.com';
+  const iterations = 30;
+  const icmpTimeout = 2; 
+  const dnsTimeout = 2000;
+  const maxRetries = 3;
+
+  const pingHost = async () => {
+    let attempts = 0;
+    while (attempts < maxRetries) {
+      try {
+        const result = await ping.promise.probe(host, { timeout: icmpTimeout });
+        if (result.alive && result.time !== undefined) {
+          return result.time;
+        }
+      } catch (error) {
+        console.error(`ICMP ping error: ${error.message}`);
+      }
+      attempts++;
+    }
+    return null;
+  };
+
+  const dnsLookup = async () => {
+    let attempts = 0;
+    while (attempts < maxRetries) {
+      const startTime = performance.now();
+      try {
+        await dns.lookup(host, { all: true, timeout: dnsTimeout });
+        const endTime = performance.now();
+        return endTime - startTime;
+      } catch (error) {
+        console.error(`DNS lookup error: ${error.message}`);
+      }
+      attempts++;
+    }
+    return null;
+  };
 
   try {
-    let validTimes = [];
+    let pingTimes = [];
 
-    for (let i = 0; i < iterations; i++) {
-      const result = await ping.promise.probe(host, { timeout });
-
-      if (result.alive && result.time !== undefined && result.time <= maxPingThreshold) {
-        validTimes.push(result.time);
+    for (let i = 0; i < iterations / 2; i++) {
+      const pingTime = await pingHost();
+      if (pingTime !== null) {
+        pingTimes.push(pingTime);
       }
     }
 
-    if (validTimes.length > 0) {
-      validTimes.sort((a, b) => a - b);
-      const medianIndex = Math.floor(validTimes.length / 2);
-      const medianPing = validTimes[medianIndex];
+    for (let i = 0; i < iterations / 2; i++) {
+      const dnsTime = await dnsLookup();
+      if (dnsTime !== null) {
+        pingTimes.push(dnsTime);
+      }
+    }
+
+    if (pingTimes.length > 0) {
+      pingTimes.sort((a, b) => a - b);
+
+      const trimCount = Math.floor(pingTimes.length * 0.1);
+      pingTimes = pingTimes.slice(trimCount, pingTimes.length - trimCount);
+
+      const medianIndex = Math.floor(pingTimes.length / 2);
+      const medianPing = (pingTimes.length % 2 === 0)
+        ? (pingTimes[medianIndex - 1] + pingTimes[medianIndex]) / 2
+        : pingTimes[medianIndex];
 
       res.json({ ping: medianPing.toFixed(2) });
     } else {
