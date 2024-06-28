@@ -28,17 +28,17 @@ This project is an internet speed test application that measures download speed,
    cd speed-test-app/server
    ```
 2. Install dependencies:
-  ```bash
+   ```bash
    npm install
-```
+   ```
 3. Create a `.env` file in the backend directory and add your MongoDB URI:
-  ```bash
-  MONGO_URI=your_mongo_uri
-```
+   ```bash
+   MONGO_URI=your_mongo_uri
+   ```
 4. Start the backend server:
-  ```bash
-  node index.js
- ```
+   ```bash
+   node index.js
+   ```
 
 ### Frontend Setup
 
@@ -52,12 +52,12 @@ This project is an internet speed test application that measures download speed,
    ```
 3. Create a `.env` file in the frontend directory and add your API base URL:
    ```bash
-  REACT_APP_API_BASE_URL=http://localhost:5000/speedtests 
-  ```
+   REACT_APP_API_BASE_URL=http://localhost:5000/speedtests
+   ```
 4. Start the frontend development server:
    ```bash
    npm start
-```
+   ```
 
 ## Usage
 
